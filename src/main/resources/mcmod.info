@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "rtmlwjgl3ifycompat",
+    "name": "RTM LWJGL3ify Compat",
+    "description": "Compatibility patch mod for RealTrainMod model packs on lwjgl3ify, with a focus on modelpack zip classpath injection and safer load speed defaults.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://github.com/325-Sunnygo/LWJGL3ify-rtm",
+    "updateUrl": "",
+    "authorList": ["325"],
+    "credits": "References KaizPatchX's modelpack zip classpath approach.",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
