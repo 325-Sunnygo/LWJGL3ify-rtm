@@ -47,7 +47,9 @@ Building requires a Java 8 toolchain (ForgeGradle 1.2 does not run on newer JDKs
 ## License
 
 Licensed under the **GNU Lesser General Public License v3.0 (or later)**.
-See [`COPYING.LESSER`](COPYING.LESSER) (LGPL-3.0) and [`COPYING`](COPYING) (GPL-3.0).
+See [`LICENSE`](LICENSE) / [`COPYING.LESSER`](COPYING.LESSER) (LGPL-3.0) and [`COPYING`](COPYING) (GPL-3.0).
+
+日本語の概要・参考訳: [`LICENSE.ja.md`](LICENSE.ja.md) （法的に有効なのは英語の原文のみ）
 
 ## Credits
 
