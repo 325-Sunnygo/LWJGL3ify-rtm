@@ -1,57 +1,55 @@
 # RTM LWJGL3ify Compat
 
-Small external patch mod for Minecraft 1.7.10 that targets the rough edges between RealTrainMod model packs and `lwjgl3ify`.
+RealTrainMod（RTM）のモデルパックを `lwjgl3ify` 環境で動かすための、Minecraft 1.7.10 向けの小さな外部パッチ Mod です。
 
-By **325**. Repository: <https://github.com/325-Sunnygo/LWJGL3ify-rtm>
+作者: **325** / リポジトリ: <https://github.com/325-Sunnygo/LWJGL3ify-rtm>
 
-## Requirements
+## 必要なもの
 
-- Minecraft **1.7.10** with Minecraft Forge
-- **lwjgl3ify** (with its prerequisites: GTNHLib, UniMixins)
-- **Angelica** — **required**. RTM's renderer scripts use legacy immediate-mode OpenGL (`GL11.glBegin`/`glVertex`/display lists), which `lwjgl3ify` alone does not emulate. This mod routes those calls through Angelica's `GLStateManager`. Without Angelica you will get a `ClassNotFoundException: ...ScriptGL.glXxx` crash while RTM models render.
-- **RealTrainMod** (works with stock RTM or a KaizPatchX-based RTM build)
+- **Minecraft 1.7.10** + Minecraft Forge
+- **lwjgl3ify**（前提として GTNHLib・UniMixins が必要）
+- **Angelica** — **必須**。RTM のレンダースクリプトはレガシーな即時モード OpenGL（`GL11.glBegin` / `glVertex` / ディスプレイリスト）を使いますが、`lwjgl3ify` 単体ではこれをエミュレートしません。本 Mod はこれらの呼び出しを Angelica の `GLStateManager` 経由に転送します。Angelica が無いと、RTM のモデル描画時に `ClassNotFoundException: ...ScriptGL.glXxx` でクラッシュします。
+- **RealTrainMod**（素の RTM でも、KaizPatchX ベースの RTM でも動作します）
 
-## What it does
+## できること
 
-- Injects every `.zip` and `.jar` under `mods/modelpacks` into the Launch classpath very early, matching the approach used by KaizPatchX's `ModelPackLoader`.
-- Coremods `jp.ngt.ngtlib.io.NGTFileLoader` so RTM/NGTLib modelpack file lookup uses a dedicated compat index instead of the fragile vanilla scan path.
-- Coremods `jp.ngt.ngtlib.renderer.model.ModelLoader` so model loading resolves `.mqo`/`.obj` resources from modelpack archives through the compat loader.
-- Coremods `jp.ngt.rtm.RTMConfig` so `ModelPack load speed` is clamped from `3` (Fast) to `2` (Default) at config-load time. The clamp runs inside `syncConfig`, before RTM's background `ModelPackLoadThread` reads the value, so it can't race the loader. Fast/work-stealing loading is noticeably less stable under `lwjgl3ify`.
-- Routes RTM renderer scripts' `GL11` calls through Angelica's `GLStateManager` (via `ScriptGL`), and restores the `GuiSelectModel` model preview by doing the same for its projection/lighting setup instead of leaving it blank.
-- On macOS, forces `java.awt.headless=true` early (matching what `lwjgl3ify`/RFB expect) so RTM never tries to open its Swing loading window on the GLFW main thread.
-- Replaces that Swing window with an in-game OpenGL progress overlay (a bar + status text drawn over the title screen / HUD while model packs load), plus console logging. The overlay reads thread-safe progress state on the client render thread, so it works on macOS where RTM's Swing window cannot.
+- `mods/modelpacks` 内のすべての `.zip` / `.jar` を起動の非常に早い段階で Launch クラスパスへ注入します（KaizPatchX の `ModelPackLoader` と同じ方式）。
+- `jp.ngt.ngtlib.io.NGTFileLoader` をコアMod改変し、RTM/NGTLib のモデルパックのファイル探索を、壊れやすいバニラの走査経路ではなく専用の互換インデックス経由にします。
+- `jp.ngt.ngtlib.renderer.model.ModelLoader` をコアMod改変し、`.mqo` / `.obj` リソースをモデルパックのアーカイブから互換ローダー経由で解決します。
+- `jp.ngt.rtm.RTMConfig` をコアMod改変し、`ModelPack load speed` を設定読み込み時に `3`（Fast）から `2`（Default）へクランプします。クランプは `syncConfig` 内（RTM のバックグラウンド `ModelPackLoadThread` が値を読む前）で実行されるため、ローダーとの競合（レース）が起きません。Fast（work-stealing）モードは `lwjgl3ify` 環境では明らかに不安定です。
+- RTM レンダースクリプトの `GL11` 呼び出しを（`ScriptGL` 経由で）Angelica の `GLStateManager` に転送します。また `GuiSelectModel` のモデルプレビューを、同じくGL状態管理経由で投影・ライティングを組み立て直すことで、空白表示にせず復活させます。
+- macOS では早い段階で `java.awt.headless=true` を設定し（`lwjgl3ify`/RFB の前提に合わせる）、RTM が GLFW のメインスレッド上で Swing のロードウィンドウを開こうとしないようにします。
+- その Swing ウィンドウの代わりに、ゲーム内 OpenGL のプログレスオーバーレイ（モデルパック読み込み中にタイトル画面／HUD 上へバー＋状態テキストを描画）とコンソールログを表示します。オーバーレイはスレッドセーフな進捗状態をクライアント描画スレッドで読むため、RTM の Swing ウィンドウが使えない macOS でも動作します。
 
-## What it does not do yet
+## まだやっていないこと
 
-- It is aimed at "modelpack loads and becomes usable" first, not the full breadth of KaizPatchX's extra fixes and optimizations.
+- まずは「モデルパックが読み込まれて使えるようになる」ことを目標にしており、KaizPatchX が持つ各種の追加修正・最適化の全範囲はカバーしていません。
 
-## Why this exists
+## なぜ存在するか
 
-- Original RTM expects model pack resources to be classpath-visible in several places.
-- `lwjgl3ify` setups are noticeably less stable when RTM model pack loading is pushed to the fastest parallel mode.
+- 素の RTM は、モデルパックのリソースが複数の箇所でクラスパスから見えることを前提にしています。
+- `lwjgl3ify` 環境では、RTM のモデルパック読み込みを最速の並列モードにすると明らかに不安定になります。
 
-## Build
+## ビルド
 
 ```bash
 ./gradlew build
 ```
 
-Output jar:
+出力 jar:
 
 ```text
-build/libs/rtm-lwjgl3ify-compat-0.1.0.jar
+build/libs/rtm-lwjgl3ify-compat-1.0.0.jar
 ```
 
-Building requires a Java 8 toolchain (ForgeGradle 1.2 does not run on newer JDKs).
+ビルドには Java 8 のツールチェーンが必要です（ForgeGradle 1.2 は新しい JDK では動きません）。
 
-## License
+## ライセンス
 
-Licensed under the **GNU Lesser General Public License v3.0 (or later)**.
-See [`LICENSE`](LICENSE) / [`COPYING.LESSER`](COPYING.LESSER) (LGPL-3.0) and [`COPYING`](COPYING) (GPL-3.0).
+**GNU 劣等一般公衆利用許諾書 バージョン 3 以降（GNU Lesser General Public License v3.0 or later）** で配布しています。
+[`LICENSE`](LICENSE) / [`COPYING.LESSER`](COPYING.LESSER)（LGPL-3.0）および [`COPYING`](COPYING)（GPL-3.0）を参照してください。
 
-日本語の概要・参考訳: [`LICENSE.ja.md`](LICENSE.ja.md) （法的に有効なのは英語の原文のみ）
+## クレジット
 
-## Credits
-
-- Author: **325**
-- References KaizPatchX's modelpack zip classpath-injection approach.
+- 作者: **325**
+- KaizPatchX のモデルパック zip クラスパス注入の手法を参考にしています。
